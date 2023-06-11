@@ -110,10 +110,34 @@ def update_parameters():
 # Generowanie początkowej populacji
 def generate_initial_population():
     population = []
+    class_counts = {c: 0 for c in classes}
+    max_class_count = population_size // len(classes)
+
     for _ in range(population_size):
-        schedule = np.full((len(days), len(hours)), "", dtype=object)
+        schedule = np.empty((len(days), len(hours)), dtype=object)
+
+        # Reset the class_counts for each schedule
+        current_class_counts = class_counts.copy()
+
+        # Fill the schedule with equal number of each class
+        for day in range(len(days)):
+            for hour in range(len(hours)):
+                available_classes = [c for c, count in current_class_counts.items() if count < max_class_count]
+
+                # Check if there are available classes to assign
+                if len(available_classes) == 0:
+                    # If no available classes, reset the class_counts and try again
+                    current_class_counts = class_counts.copy()
+                    available_classes = [c for c, count in current_class_counts.items() if count < max_class_count]
+
+                selected_class = random.choice(available_classes)
+                current_class_counts[selected_class] += 1
+                schedule[day][hour] = selected_class
+
         population.append(schedule)
+
     return population
+
 
 # Obliczanie dopasowania dla planu zajęć
 def calculate_fitness(schedule):
@@ -142,11 +166,22 @@ def calculate_fitness(schedule):
     return fitness + empty_penalty
 
 # Selekcja osobników
+# Selekcja osobników
 def selection(population):
     fitness_scores = [calculate_fitness(schedule) for schedule in population]
-    probabilities = [score / sum(fitness_scores) for score in fitness_scores]
-    selected_indices = np.random.choice(range(len(population)), size=population_size, replace=True, p=probabilities)
-    selected_population = [population[i] for i in selected_indices]
+    selected_population = []
+
+    # Elitarność - wybierz najlepsze rozwiązanie bez zmian
+    best_schedule = max(population, key=calculate_fitness, default=None)
+    selected_population.append(best_schedule)
+
+    # Selekcja turniejowa
+    tournament_size = min(5, len(population))
+    while len(selected_population) < population_size:
+        participants = random.sample(population, tournament_size)
+        winner = max(participants, key=calculate_fitness)
+        selected_population.append(winner)
+
     return selected_population
 
 # Krzyżowanie osobników
@@ -161,11 +196,18 @@ def crossover(parent1, parent2):
 
 # Mutacja osobników
 def mutate(schedule):
-    for day in range(len(days)):
-        for hour in range(len(hours)):
-            if random.random() < mutation_rate:
-                schedule[day][hour] = random.choice(classes)
+    for _ in range(len(days) * len(hours)):
+        if random.random() < mutation_rate:
+            day1 = random.randint(0, len(days) - 1)
+            hour1 = random.randint(0, len(hours) - 1)
+            day2 = random.randint(0, len(days) - 1)
+            hour2 = random.randint(0, len(hours) - 1)
+
+            # Swap classes between two randomly selected positions
+            schedule[day1][hour1], schedule[day2][hour2] = schedule[day2][hour2], schedule[day1][hour1]
+
     return schedule
+
 
 # Algorytm genetyczny
 def genetic_algorithm():
@@ -266,7 +308,6 @@ style = ttk.Style()
 
 preferences_tree = tkinter.ttk.Treeview(preferences_frame, columns=("Przedmiot", "Dni", "Godziny"), show="headings", style="Treeview")
 style.theme_use("vista")
-# style.configure("Treeview", background="#212121", foreground="white", fieldbackground="#212121")
 style.map("Treeview", background=[("selected", "#1f538d")])
 
 preferences_tree.heading("Przedmiot", text="Przedmiot")
@@ -303,11 +344,11 @@ param_entries_frame.pack(pady=10)
 
 population_size_entry = tk.CTkEntry(param_labels_frame, width=50)
 population_size_entry.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
-population_size_entry.insert(0, str(population_size))
+population_size_entry.insert(0, 50)
 
 generations_entry = tk.CTkEntry(param_labels_frame, width=50)
 generations_entry.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
-generations_entry.insert(0, str(generations))
+generations_entry.insert(0, 10)
 
 mutation_rate_entry = tk.CTkEntry(param_labels_frame, width=50)
 mutation_rate_entry.grid(row=1, column=4, columnspan=2, padx=5, pady=5)
