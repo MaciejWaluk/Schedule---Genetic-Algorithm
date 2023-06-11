@@ -21,9 +21,6 @@ classes = [
 days = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"]
 hours = ["8:00-9:30", "9:45-11:15", "11:30-13:00", "14:00-15:30"]
 
-# Ograniczenia planowania zajęć
-# preferences = {}
-
 # Parametry algorytmu genetycznego
 population_size = 100
 generations = 500
@@ -63,13 +60,6 @@ def generate_schedule():
     except Exception as e:
         print(e)
 
-# Funkcja do obsługi zdarzenia kliknięcia przycisku "Powrót"
-# def return_to_preferences():
-#     schedule_frame.pack_forget()  # Ukrycie kontenera z planem zajęć
-#     return_button.pack_forget()  # Ukrycie przycisku powrotu
-#     generate_button.pack(side=tk.LEFT, padx=5)  # Wyświetlenie przycisku generowania na lewo
-#     import_button.pack(side=tk.LEFT, padx=5)  # Wyświetlenie przycisku importowania na lewo
-#     preferences_frame.pack()  # Wyświetlenie kontenera z dodawaniem ograniczeń
 
 # Funkcja do obsługi zdarzenia kliknięcia przycisku "Dodaj preferencje"
 def add_preferences():
@@ -107,6 +97,14 @@ def update_parameters():
     mutation_rate = float(mutation_rate_entry.get())
     crossover_rate = float(crossover_rate_entry.get())
 
+#Funkcja przywracajaca aplikacje do stanu poczatkowego
+def reset():
+    remove_all_preferences()
+    for widget in schedule_frame.winfo_children():
+        widget.destroy()
+
+
+
 # Generowanie początkowej populacji
 def generate_initial_population():
     population = []
@@ -116,17 +114,17 @@ def generate_initial_population():
     for _ in range(population_size):
         schedule = np.empty((len(days), len(hours)), dtype=object)
 
-        # Reset the class_counts for each schedule
+        # Zresetowanie zmiennej przechowywujacej ilosc przedmiotow
         current_class_counts = class_counts.copy()
 
-        # Fill the schedule with equal number of each class
+        # Wypelnienie planu lekcji przedmiotami w takiej samej ilosci
         for day in range(len(days)):
             for hour in range(len(hours)):
                 available_classes = [c for c, count in current_class_counts.items() if count < max_class_count]
 
-                # Check if there are available classes to assign
+                # Sprawdzenie, czy jest mozliwe przypisanie jakichkolwiek zajec
                 if len(available_classes) == 0:
-                    # If no available classes, reset the class_counts and try again
+                    # Jesli brak dostepnych zajec, zresetowanie licznika zajec i ponowna proba
                     current_class_counts = class_counts.copy()
                     available_classes = [c for c, count in current_class_counts.items() if count < max_class_count]
 
@@ -166,7 +164,6 @@ def calculate_fitness(schedule):
     return fitness + empty_penalty
 
 # Selekcja osobników
-# Selekcja osobników
 def selection(population):
     fitness_scores = [calculate_fitness(schedule) for schedule in population]
     selected_population = []
@@ -203,7 +200,7 @@ def mutate(schedule):
             day2 = random.randint(0, len(days) - 1)
             hour2 = random.randint(0, len(hours) - 1)
 
-            # Swap classes between two randomly selected positions
+            # Zamiana dwoch losowo wybranych klas
             schedule[day1][hour1], schedule[day2][hour2] = schedule[day2][hour2], schedule[day1][hour1]
 
     return schedule
@@ -310,6 +307,7 @@ preferences_tree = tkinter.ttk.Treeview(preferences_frame, columns=("Przedmiot",
 style.theme_use("vista")
 style.map("Treeview", background=[("selected", "#1f538d")])
 
+
 preferences_tree.heading("Przedmiot", text="Przedmiot")
 preferences_tree.heading("Dni", text="Dni")
 preferences_tree.heading("Godziny", text="Godziny")
@@ -339,8 +337,6 @@ cross_rate_label.grid(row=0, column=6, columnspan=2, padx=5, pady=5)
 
 
 # Pola tekstowe dla parametrów algorytmu genetycznego
-param_entries_frame = tk.CTkFrame(root)
-param_entries_frame.pack(pady=10)
 
 population_size_entry = tk.CTkEntry(param_labels_frame, width=50)
 population_size_entry.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
@@ -359,25 +355,20 @@ crossover_rate_entry.grid(row=1, column=6, columnspan=2, padx=5, pady=5)
 crossover_rate_entry.insert(0, str(crossover_rate))
 
 
-
-# Kontener na przyciski i pola tekstowe
-# buttons_frame = tk.CTkFrame(root)
-# buttons_frame.pack(pady=10)
-
-
-
+buttons_frame = tk.CTkFrame(root, bg_color="#1a1a1a")
+buttons_frame.pack(pady=10)
 
 
 # Przycisk do generowania planu zajęć
-generate_button = tk.CTkButton(param_labels_frame, text="Generuj plan zajęć", command=generate_schedule)
-generate_button.grid(row=2, column=2, columnspan=2, padx=5, pady=15)
+generate_button = tk.CTkButton(buttons_frame, text="Generuj plan zajęć", command=generate_schedule)
+generate_button.grid(row=0, column=1, columnspan=2, padx=5, pady=15)
 
 # Przycisk do importowania ograniczeń
-import_button = tk.CTkButton(param_labels_frame, text="Importuj ograniczenia", command=import_constraints)
-import_button.grid(row=2, column=4, columnspan=2, padx=5, pady=15)
+import_button = tk.CTkButton(buttons_frame, text="Importuj ograniczenia", command=import_constraints)
+import_button.grid(row=0, column=3, columnspan=2, padx=5, pady=15)
 
-# Przycisk powrotu
-# return_button = tk.CTkButton(root, text="Powrót", command=return_to_preferences)
-# return_button.pack_forget()  # Ukrycie przycisku powrotu na początku
+reset_button = tk.CTkButton(buttons_frame, text="Reset", command=reset)
+reset_button.grid(row=0, column=5, columnspan=1, padx=5, pady=15)
+
 
 root.mainloop()
