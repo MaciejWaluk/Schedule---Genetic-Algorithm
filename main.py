@@ -156,11 +156,10 @@ def calculate_fitness(schedule):
 
             # Sprawdzanie, czy zajęcia nie naruszają ograniczeń
             if class1 in preferences:
-                if day not in preferences[class1][0] and hour not in preferences[class1][1]:
+                if days[day] not in preferences[class1][0] and hours[hour] not in preferences[class1][1]:
                     conflicts += 2
-
-                if day in preferences[class1][0] and hour not in preferences[class1][1]:
-                    conflicts+=1
+                elif days[day] in preferences[class1][0] and hours[hour] not in preferences[class1][1]:
+                    conflicts += 1
 
     # Obliczanie dopasowania, uwzględniając zarówno konflikty, jak i liczbę pustych zajęć
     fitness = 1 / (conflicts + 1)
@@ -177,11 +176,12 @@ def selection(population):
     selected_population.append(best_schedule)
 
     # Selekcja turniejowa
-    tournament_size = min(5, len(population))
+    tournament_size = min(3, len(population))
     while len(selected_population) < population_size:
         participants = random.sample(population, tournament_size)
         winner = max(participants, key=calculate_fitness)
-        selected_population.append(winner)
+        if winner.tolist() != best_schedule.tolist():
+            selected_population.append(winner)
 
     return selected_population
 
@@ -199,13 +199,12 @@ def crossover(parent1, parent2):
 def mutate(schedule):
     for _ in range(len(days) * len(hours)):
         if random.random() < mutation_rate:
-            day1 = random.randint(0, len(days) - 1)
-            hour1 = random.randint(0, len(hours) - 1)
-            day2 = random.randint(0, len(days) - 1)
-            hour2 = random.randint(0, len(hours) - 1)
+            day = random.randint(0, len(days) - 1)
+            hour = random.randint(0, len(hours) - 1)
 
-            # Zamiana dwoch losowo wybranych klas
-            schedule[day1][hour1], schedule[day2][hour2] = schedule[day2][hour2], schedule[day1][hour1]
+            # Wybieranie nowego przedmiotu
+            new_class = random.choice(classes)
+            schedule[day][hour] = new_class
 
     return schedule
 
