@@ -1,3 +1,4 @@
+import math
 import random
 import customtkinter
 import numpy as np
@@ -109,7 +110,7 @@ def reset():
 def generate_initial_population():
     population = []
     class_counts = {c: 0 for c in classes}
-    max_class_count = population_size // len(classes)
+    max_class_count = math.ceil(population_size / len(classes))
 
     for _ in range(population_size):
         schedule = np.empty((len(days), len(hours)), dtype=object)
@@ -155,8 +156,11 @@ def calculate_fitness(schedule):
 
             # Sprawdzanie, czy zajęcia nie naruszają ograniczeń
             if class1 in preferences:
-                if day not in preferences[class1][0] or hour not in preferences[class1][1]:
-                    conflicts += 1
+                if day not in preferences[class1][0] and hour not in preferences[class1][1]:
+                    conflicts += 2
+
+                if day in preferences[class1][0] and hour not in preferences[class1][1]:
+                    conflicts+=1
 
     # Obliczanie dopasowania, uwzględniając zarówno konflikty, jak i liczbę pustych zajęć
     fitness = 1 / (conflicts + 1)
@@ -230,13 +234,13 @@ def genetic_algorithm():
 def import_constraints():
     global preferences
     constraints = {
-        "Matematyka": (["Poniedziałek"], ["8:00-9:30", "9:45-11:15", "11:30-13:00"]),
-        "Historia": (["Wtorek", "Środa", "Czwartek"], ["9:45-11:15", "11:30-13:00"]),
-        "Język angielski": (["Poniedziałek", "Środa", "Piątek"], ["9:45-11:15"]),
-        "Fizyka": (["Poniedziałek", "Wtorek", "Czwartek"], ["8:00-9:30", "11:30-13:00"]),
+        "Matematyka": (["Poniedziałek"], ["8:00-9:30", "11:30-13:00"]),
+        "Historia": (["Wtorek", "Czwartek"], ["9:45-11:15", "11:30-13:00"]),
+        "Język angielski": (["Środa","Piątek"], ["9:45-11:15"]),
+        "Fizyka": (["Poniedziałek", "Czwartek"], ["8:00-9:30", "11:30-13:00"]),
         "Biologia": (["Wtorek", "Czwartek"], ["9:45-11:15"]),
         "Chemia": (["Poniedziałek", "Piątek"], ["8:00-9:30"]),
-        "Wychowanie fizyczne": (["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"], ["8:00-9:30", "9:45-11:15", "11:30-13:00", "14:00-15:30"])
+        "Wychowanie fizyczne": (["Czwartek", "Piątek"], ["8:00-9:30", "9:45-11:15", "11:30-13:00", "14:00-15:30"])
     }
 
     for subject, hours_days in constraints.items():
