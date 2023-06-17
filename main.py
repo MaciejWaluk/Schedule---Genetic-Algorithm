@@ -13,9 +13,9 @@ classes = [
     "Historia",
     "Język angielski",
     "Fizyka",
-    "Biologia",
-    "Chemia",
-    "Wychowanie fizyczne"
+    "Biologia"
+    # "Chemia"
+    # "Wychowanie fizyczne"
 ]
 
 # Dostępne dni tygodnia i godziny
@@ -24,12 +24,13 @@ hours = ["8:00-9:30", "9:45-11:15", "11:30-13:00", "14:00-15:30"]
 
 # Parametry algorytmu genetycznego
 population_size = 100
-generations = 500
-mutation_rate = 0.8
-crossover_rate = 0.5
+generations = 100
+mutation_rate = 0.2
+crossover_rate = 0.7
 
 # Słownik preferencji zajęć
 preferences = {}
+
 
 # Funkcja do wyświetlania planu zajęć w tabeli
 def display_schedule(schedule):
@@ -141,7 +142,7 @@ def generate_initial_population():
 # Obliczanie dopasowania dla planu zajęć
 def calculate_fitness(schedule):
     conflicts = 0
-    empty_count = 0  # Licznik pustych zajęć
+    empty_count = 0  # Counter for empty classes
 
     for day in range(len(days)):
         for hour in range(len(hours)):
@@ -154,14 +155,18 @@ def calculate_fitness(schedule):
                     if (day != other_day or hour != other_hour) and class1 == schedule[other_day][other_hour]:
                         conflicts += 1
 
-            # Sprawdzanie, czy zajęcia nie naruszają ograniczeń
-            if class1 in preferences:
-                if days[day] not in preferences[class1][0] and hours[hour] not in preferences[class1][1]:
-                    conflicts += 2
-                elif days[day] in preferences[class1][0] and hours[hour] not in preferences[class1][1]:
-                    conflicts += 1
+    # Iterate over the preference list first
+    for class1, prefs in preferences.items():
+        pref_days, pref_hours = prefs
+        for day in range(len(days)):
+            for hour in range(len(hours)):
+                if schedule[day][hour] == class1:
+                    if days[day] not in pref_days and hours[hour] not in pref_hours:
+                        conflicts += 2
+                    elif days[day] in pref_days and hours[hour] not in pref_hours:
+                        conflicts += 1
 
-    # Obliczanie dopasowania, uwzględniając zarówno konflikty, jak i liczbę pustych zajęć
+    # Calculate fitness, taking into account both conflicts and the number of empty classes
     fitness = 1 / (conflicts + 1)
     empty_penalty = 1 / (empty_count + 1)
     return fitness + empty_penalty
@@ -188,16 +193,43 @@ def selection(population):
 # Krzyżowanie osobników
 def crossover(parent1, parent2):
     child = np.copy(parent1)
-    for day in range(len(days)):
-        for hour in range(len(hours)):
-            if child[day][hour] != parent2[day][hour]:
+    if crossover_var.get() == 'Jednopunktowe':
+        crossover_point = random.randint(1, len(days) * len(hours) - 1)
+        child[crossover_point:] = parent2[crossover_point:]
+
+    elif crossover_var.get() == "Dwupunktowe":
+        if random.random() < crossover_rate:
+            # Wybór dwóch punktów krzyżowania
+            crossover_points = sorted(random.sample(range(1, len(days) * len(hours) - 1), 2))
+
+            # Wymiana fragmentów między punktami krzyżowania
+            child[crossover_points[0]:crossover_points[1], :] = parent2[crossover_points[0]:crossover_points[1], :]
+            print("Krzyzowanie dwupunktowe")
+
+
+    elif crossover_var.get() == "Równomierne":
+        for day in range(len(days)):
+            for hour in range(len(hours)):
                 if random.random() < crossover_rate:
-                    child[day][hour] = parent2[day][hour]
+                    # Wybór losowego rodzica
+                    parent = random.choice([parent1, parent2])
+                    child[day][hour] = parent[day][hour]
+
+        print("Krzyżowanie równomierne")
+
+    else:
+        print("Cos innego")
+        for day in range(len(days)):
+            for hour in range(len(hours)):
+                if child[day][hour] != parent2[day][hour]:
+                    if random.random() < crossover_rate:
+                        child[day][hour] = parent2[day][hour]
     return child
 
 # Mutacja osobników
 def mutate(schedule):
-    for _ in range(len(days) * len(hours)):
+
+    if mutation_var.get() == "Jednopunktowa":
         if random.random() < mutation_rate:
             day = random.randint(0, len(days) - 1)
             hour = random.randint(0, len(hours) - 1)
@@ -205,6 +237,43 @@ def mutate(schedule):
             # Wybieranie nowego przedmiotu
             new_class = random.choice(classes)
             schedule[day][hour] = new_class
+
+    elif mutation_var.get() == "Inwersja":
+        if random.random() < mutation_rate:
+            # Wybór losowego fragmentu do inwersji
+            day_start = random.randint(0, len(days) - 2)
+            day_end = random.randint(day_start + 1, len(days) - 1)
+
+            # Inwersja kolejności zajęć w wybranym fragmencie
+            for day in range(day_start, day_end + 1):
+                schedule[day, :] = np.flip(schedule[day, :])
+
+            print("Mutacja inwersji")
+
+    elif mutation_var.get() == "Transpozycja":
+        if random.random() < mutation_rate:
+            # Wybór losowych pozycji
+            day1 = random.randint(0, len(days) - 1)
+            hour1 = random.randint(0, len(hours) - 1)
+            day2 = random.randint(0, len(days) - 1)
+            hour2 = random.randint(0, len(hours) - 1)
+
+            # Zamiana miejscami dwóch zajęć
+            schedule[day1][hour1], schedule[day2][hour2] = schedule[day2][hour2], schedule[day1][hour1]
+
+        print("Mutacja transpozycji")
+
+
+    else:
+        print("Inna mutacja")
+        for _ in range(len(days) * len(hours)):
+            if random.random() < mutation_rate:
+                day = random.randint(0, len(days) - 1)
+                hour = random.randint(0, len(hours) - 1)
+
+                # Wybieranie nowego przedmiotu
+                new_class = random.choice(classes)
+                schedule[day][hour] = new_class
 
     return schedule
 
@@ -264,9 +333,6 @@ root.title("Generator planu zajęć")
 preferences_frame = tk.CTkFrame(master=root)
 preferences_frame.pack(pady=10, padx=10, fill="both", expand=True)
 
-# Kontener na plan zajęć
-schedule_frame = tk.CTkFrame(root)
-schedule_frame.pack(pady=10, padx=10, fill="both", expand=True)
 
 # Etykieta i lista rozwijana dla wyboru przedmiotu
 subject_label = tk.CTkLabel(preferences_frame, text="Przedmiot:")
@@ -322,6 +388,40 @@ preferences_tree.grid(row=4, column=0, columnspan=8, padx=5, pady=5, sticky="nse
 preferences_frame.columnconfigure(0, weight=1)
 preferences_frame.rowconfigure(4, weight=1)
 
+
+
+
+variants_frame = tk.CTkFrame(master=root)
+variants_frame.pack(pady=10, padx=10)
+
+mutation_label = tk.CTkLabel(variants_frame, text="Wariant mutacji:")
+mutation_label.grid(row=0, column=0, padx=5, pady=5)
+mutation_var = tk.StringVar(value="Jednopunktowa")
+
+mutation_single_point_radio = tk.CTkRadioButton(variants_frame, text="Jednopunktowa", variable=mutation_var, value="Jednopunktowa")
+mutation_single_point_radio.grid(row=0, column=1, padx=2, pady=2)
+
+mutation_inversion_radio = tk.CTkRadioButton(variants_frame, text="Inwersja", variable=mutation_var, value="Inwersja")
+mutation_inversion_radio.grid(row=0, column=2, padx=2, pady=2)
+
+mutation_transposition_radio = tk.CTkRadioButton(variants_frame, text="Transpozycja", variable=mutation_var, value="Transpozycja")
+mutation_transposition_radio.grid(row=0, column=3, padx=2, pady=2)
+
+crossover_label = tk.CTkLabel(variants_frame, text="Wariant krzyżowania:")
+crossover_label.grid(row=1, column=0, padx=5, pady=5)
+crossover_var = tk.StringVar(value="Jednopunktowe")
+
+crossover_single_point_radio = tk.CTkRadioButton(variants_frame, text="Jednopunktowe", variable=crossover_var, value="Jednopunktowe")
+crossover_single_point_radio.grid(row=1, column=1, padx=2, pady=2)
+
+crossover_two_point_radio = tk.CTkRadioButton(variants_frame, text="Dwupunktowe", variable=crossover_var, value="Dwupunktowe")
+crossover_two_point_radio.grid(row=1, column=2, padx=2, pady=2)
+
+crossover_uniform_radio = tk.CTkRadioButton(variants_frame, text="Równomierne", variable=crossover_var, value="Równomierne")
+crossover_uniform_radio.grid(row=1, column=3, padx=2, pady=2)
+
+
+
 # Etykiety dla parametrów algorytmu genetycznego
 param_labels_frame = tk.CTkFrame(root, bg_color="#1a1a1a")
 param_labels_frame.pack(pady=10)
@@ -343,11 +443,11 @@ cross_rate_label.grid(row=0, column=6, columnspan=2, padx=5, pady=5)
 
 population_size_entry = tk.CTkEntry(param_labels_frame, width=50)
 population_size_entry.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
-population_size_entry.insert(0, 50)
+population_size_entry.insert(0, str(population_size))
 
 generations_entry = tk.CTkEntry(param_labels_frame, width=50)
 generations_entry.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
-generations_entry.insert(0, 10)
+generations_entry.insert(0, str(generations))
 
 mutation_rate_entry = tk.CTkEntry(param_labels_frame, width=50)
 mutation_rate_entry.grid(row=1, column=4, columnspan=2, padx=5, pady=5)
@@ -373,5 +473,10 @@ import_button.grid(row=0, column=3, columnspan=2, padx=5, pady=15)
 reset_button = tk.CTkButton(buttons_frame, text="Reset", command=reset)
 reset_button.grid(row=0, column=5, columnspan=1, padx=5, pady=15)
 
+
+
+# Kontener na plan zajęć
+schedule_frame = tk.CTkFrame(root)
+schedule_frame.pack(pady=10, padx=10, fill="both", expand=True)
 
 root.mainloop()
