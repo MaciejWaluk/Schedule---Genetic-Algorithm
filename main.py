@@ -306,9 +306,7 @@ def import_constraints():
         "Historia": (["Wtorek", "Czwartek"], ["9:45-11:15", "11:30-13:00"]),
         "Język angielski": (["Środa","Piątek"], ["9:45-11:15"]),
         "Fizyka": (["Poniedziałek", "Czwartek"], ["8:00-9:30", "11:30-13:00"]),
-        "Biologia": (["Wtorek", "Czwartek"], ["9:45-11:15"]),
-        "Chemia": (["Poniedziałek", "Piątek"], ["8:00-9:30"]),
-        "Wychowanie fizyczne": (["Czwartek", "Piątek"], ["8:00-9:30", "9:45-11:15", "11:30-13:00", "14:00-15:30"])
+        "Biologia": (["Wtorek", "Czwartek"], ["9:45-11:15"])
     }
 
     for subject, hours_days in constraints.items():
