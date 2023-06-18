@@ -13,9 +13,12 @@ classes = [
     "Historia",
     "Język angielski",
     "Fizyka",
-    "Biologia"
-    # "Chemia"
-    # "Wychowanie fizyczne"
+    "Biologia",
+    "Chemia",
+    "Wychowanie fizyczne",
+    "Wiedza o Społeczeństwie",
+    "PP",
+    "Plastyka"
 ]
 
 # Dostępne dni tygodnia i godziny
@@ -204,7 +207,7 @@ def crossover(parent1, parent2):
 
             # Wymiana fragmentów między punktami krzyżowania
             child[crossover_points[0]:crossover_points[1], :] = parent2[crossover_points[0]:crossover_points[1], :]
-            print("Krzyzowanie dwupunktowe")
+            # print("Krzyzowanie dwupunktowe")
 
 
     elif crossover_var.get() == "Równomierne":
@@ -215,7 +218,7 @@ def crossover(parent1, parent2):
                     parent = random.choice([parent1, parent2])
                     child[day][hour] = parent[day][hour]
 
-        print("Krzyżowanie równomierne")
+        # print("Krzyżowanie równomierne")
 
     else:
         print("Cos innego")
@@ -248,7 +251,7 @@ def mutate(schedule):
             for day in range(day_start, day_end + 1):
                 schedule[day, :] = np.flip(schedule[day, :])
 
-            print("Mutacja inwersji")
+            # print("Mutacja inwersji")
 
     elif mutation_var.get() == "Transpozycja":
         if random.random() < mutation_rate:
@@ -261,7 +264,7 @@ def mutate(schedule):
             # Zamiana miejscami dwóch zajęć
             schedule[day1][hour1], schedule[day2][hour2] = schedule[day2][hour2], schedule[day1][hour1]
 
-        print("Mutacja transpozycji")
+        # print("Mutacja transpozycji")
 
 
     else:
@@ -297,6 +300,7 @@ def genetic_algorithm():
         population = next_generation
 
     best_schedule = max(population, key=calculate_fitness)
+    print("Dokladnosc: " + str(calculate_fitness(best_schedule)))
     return best_schedule
 
 def import_constraints():
