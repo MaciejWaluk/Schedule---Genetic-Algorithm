@@ -15,10 +15,7 @@ classes = [
     "Fizyka",
     "Biologia",
     "Chemia",
-    "Wychowanie fizyczne",
-    "Wiedza o Społeczeństwie",
-    "PP",
-    "Plastyka"
+    "Wychowanie fizyczne"
 ]
 
 # Dostępne dni tygodnia i godziny
@@ -145,7 +142,7 @@ def generate_initial_population():
 # Obliczanie dopasowania dla planu zajęć
 def calculate_fitness(schedule):
     conflicts = 0
-    empty_count = 0  # Counter for empty classes
+    empty_count = 0  # Licznik pustych miejsc
 
     for day in range(len(days)):
         for hour in range(len(hours)):
@@ -158,7 +155,7 @@ def calculate_fitness(schedule):
                     if (day != other_day or hour != other_hour) and class1 == schedule[other_day][other_hour]:
                         conflicts += 1
 
-    # Iterate over the preference list first
+    # Iterowanie po liscie ograniczen
     for class1, prefs in preferences.items():
         pref_days, pref_hours = prefs
         for day in range(len(days)):
@@ -169,14 +166,13 @@ def calculate_fitness(schedule):
                     elif days[day] in pref_days and hours[hour] not in pref_hours:
                         conflicts += 1
 
-    # Calculate fitness, taking into account both conflicts and the number of empty classes
+    # Obliczanie wartosci funkcji
     fitness = 1 / (conflicts + 1)
     empty_penalty = 1 / (empty_count + 1)
     return fitness + empty_penalty
 
 # Selekcja osobników
 def selection(population):
-    fitness_scores = [calculate_fitness(schedule) for schedule in population]
     selected_population = []
 
     # Elitarność - wybierz najlepsze rozwiązanie bez zmian
@@ -207,7 +203,6 @@ def crossover(parent1, parent2):
 
             # Wymiana fragmentów między punktami krzyżowania
             child[crossover_points[0]:crossover_points[1], :] = parent2[crossover_points[0]:crossover_points[1], :]
-            # print("Krzyzowanie dwupunktowe")
 
 
     elif crossover_var.get() == "Równomierne":
@@ -218,15 +213,6 @@ def crossover(parent1, parent2):
                     parent = random.choice([parent1, parent2])
                     child[day][hour] = parent[day][hour]
 
-        # print("Krzyżowanie równomierne")
-
-    else:
-        print("Cos innego")
-        for day in range(len(days)):
-            for hour in range(len(hours)):
-                if child[day][hour] != parent2[day][hour]:
-                    if random.random() < crossover_rate:
-                        child[day][hour] = parent2[day][hour]
     return child
 
 # Mutacja osobników
@@ -251,7 +237,6 @@ def mutate(schedule):
             for day in range(day_start, day_end + 1):
                 schedule[day, :] = np.flip(schedule[day, :])
 
-            # print("Mutacja inwersji")
 
     elif mutation_var.get() == "Transpozycja":
         if random.random() < mutation_rate:
@@ -264,19 +249,6 @@ def mutate(schedule):
             # Zamiana miejscami dwóch zajęć
             schedule[day1][hour1], schedule[day2][hour2] = schedule[day2][hour2], schedule[day1][hour1]
 
-        # print("Mutacja transpozycji")
-
-
-    else:
-        print("Inna mutacja")
-        for _ in range(len(days) * len(hours)):
-            if random.random() < mutation_rate:
-                day = random.randint(0, len(days) - 1)
-                hour = random.randint(0, len(hours) - 1)
-
-                # Wybieranie nowego przedmiotu
-                new_class = random.choice(classes)
-                schedule[day][hour] = new_class
 
     return schedule
 
@@ -474,7 +446,6 @@ import_button.grid(row=0, column=3, columnspan=2, padx=5, pady=15)
 
 reset_button = tk.CTkButton(buttons_frame, text="Reset", command=reset)
 reset_button.grid(row=0, column=5, columnspan=1, padx=5, pady=15)
-
 
 
 # Kontener na plan zajęć
